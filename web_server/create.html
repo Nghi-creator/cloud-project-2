@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add New Task</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50 text-gray-800 font-sans">
+    <nav
+      class="bg-emerald-600 p-4 shadow-md text-white flex justify-between items-center mb-8"
+    >
+      <h1 class="text-2xl font-bold">Task Manager</h1>
+      <a
+        href="list.html"
+        class="bg-emerald-700 text-white px-4 py-2 rounded font-semibold hover:bg-emerald-800 transition"
+      >
+        &larr; Back to Dashboard
+      </a>
+    </nav>
+
+    <div class="max-w-xl mx-auto px-4">
+      <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100">
+        <h2 class="text-2xl font-bold mb-6 text-gray-800">Create a Task</h2>
+
+        <form id="task-form" class="space-y-5">
+          <div>
+            <label class="block text-sm font-semibold text-gray-600 mb-1"
+              >Title</label
+            >
+            <input
+              type="text"
+              id="title"
+              required
+              class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-400 outline-none transition"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-600 mb-1"
+              >Description</label
+            >
+            <textarea
+              id="description"
+              rows="3"
+              class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-400 outline-none transition"
+            ></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1"
+                >Priority</label
+              >
+              <select
+                id="priority"
+                class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-400 outline-none transition"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1"
+                >Due Date</label
+              >
+              <input
+                type="date"
+                id="dueDate"
+                required
+                class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-400 outline-none transition"
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            class="w-full bg-emerald-600 text-white p-3 rounded-lg font-bold hover:bg-emerald-700 transition mt-4"
+          >
+            Save Task
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script src="client.js"></script>
+  </body>
+</html>
