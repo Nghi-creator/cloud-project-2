@@ -1,0 +1,272 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless Task Manager - Core Infrastructure
+
+Resources:
+
+  # ==========================================
+  # 1. COMPUTE (Lambda Functions)
+  # ==========================================
+  GetTasksFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./app_server/
+      Handler: getTasks.handler
+      Runtime: nodejs20.x
+      Role: !GetAtt LambdaBaseRole.Arn 
+      ReservedConcurrentExecutions: 50 
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroup]
+        SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /tasks
+            Method: get
+            RestApiId: !Ref TaskManagerApi
+
+  CreateTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./app_server/
+      Handler: createTask.handler
+      Runtime: nodejs20.x
+      Role: !GetAtt LambdaTaskRole.Arn 
+      ReservedConcurrentExecutions: 50
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroup]
+        SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /tasks
+            Method: post
+            RestApiId: !Ref TaskManagerApi
+
+  UpdateTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./app_server/
+      Handler: updateTask.handler
+      Runtime: nodejs20.x
+      Role: !GetAtt LambdaTaskRole.Arn 
+      ReservedConcurrentExecutions: 50
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroup]
+        SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /tasks
+            Method: update
+            RestApiId: !Ref TaskManagerApi
+
+  DeleteTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./app_server/
+      Handler: deleteTask.handler
+      Runtime: nodejs20.x
+      Role: !GetAtt LambdaTaskRole.Arn 
+      ReservedConcurrentExecutions: 50
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroup]
+        SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /tasks
+            Method: delete
+            RestApiId: !Ref TaskManagerApi
+
+  # ==========================================
+  # 2. DATABASE
+  # ==========================================
+  TasksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TasksTable
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5   
+        WriteCapacityUnits: 5
+      AttributeDefinitions:
+        - AttributeName: taskId
+          AttributeType: S 
+        - AttributeName: userId
+          AttributeType: S 
+      KeySchema:
+        - AttributeName: taskId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: userId-index 
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5 
+
+
+  # ==========================================
+  # 3. NETWORKING (Custom VPC)
+  # ==========================================
+  CustomVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+
+  # Private Subnet 1
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref CustomVPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+
+  # Private Subnet 2
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref CustomVPC
+      CidrBlock: 10.0.2.0/24 # 
+      AvailabilityZone: !Select [1, !GetAZs '']
+
+  # Route Table for the Private Subnets
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref CustomVPC
+
+  # Associate Subnets with Route Table
+  Subnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+
+  Subnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable
+
+  # ==========================================
+  # 4. NETWORKING & SECURITY (VPC Endpoint)
+  # ==========================================
+  # The Lambda Security Group
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow Lambda to reach DynamoDB privately
+      VpcId: !Ref CustomVPC
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+           DestinationPrefixListId: !GetAtt DynamoDBEndpoint.PrefixListId  
+
+  # The VPC Gateway Endpoint
+  DynamoDBEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref CustomVPC
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.dynamodb"
+      VpcEndpointType: Gateway
+      RouteTableIds:
+        -  !Ref PrivateRouteTable 
+
+  # ==========================================
+  # 5. IAM Roles
+  # ==========================================
+  # Role 1: LambdaBaseRole (For GET requests)
+  LambdaBaseRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: LambdaBaseRole 
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: VPCAndLoggingAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow 
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                Resource: "*"
+              - Effect: Allow 
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "arn:aws:logs:*:*:*"
+
+  # Role 2: LambdaTaskRole (For POST/PUT/DELETE)
+  LambdaTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: LambdaTaskRole 
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: DynamoDBTaskAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow 
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "arn:aws:logs:*:*:*"
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                Resource: !GetAtt TasksTable.Arn 
+
+  # ==========================================
+  # 5. API GATEWAY 
+  # ==========================================
+  TaskManagerApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type'"
+        AllowOrigin: "'https://dXXXXXXXX.cloudfront.net'" # REPLACE WITH REAL URL!
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          ThrottlingRateLimit: 100
+          ThrottlingBurstLimit: 50 
+
