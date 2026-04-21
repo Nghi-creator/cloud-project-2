@@ -263,7 +263,7 @@ Resources:
       Cors:
         AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
         AllowHeaders: "'Content-Type'"
-        AllowOrigin: "'https://dXXXXXXXX.cloudfront.net'" # REPLACE WITH REAL URL!
+        AllowOrigin: "'d1dd1v9c4h1lsi.cloudfront.net'" 
       MethodSettings:
         - ResourcePath: "/*"
           HttpMethod: "*"
