@@ -4,7 +4,7 @@ const dbService = require("./dbService");
 exports.handler = async (event) => {
   const body = JSON.parse(event.body);
   const taskId = event.pathParameters.id;
-  const updatedTask = dbService.updateTaskStatus(taskId, body.status);
+  const updatedTask = await dbService.updateTaskStatus(taskId, body.status);
 
   if (!updatedTask) {
     return {

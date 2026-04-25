@@ -1,9 +1,8 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: Serverless Task Manager - Core Infrastructure
 
 Resources:
-
   # ==========================================
   # 1. COMPUTE (Lambda Functions)
   # ==========================================
@@ -13,8 +12,8 @@ Resources:
       CodeUri: ./app_server/
       Handler: getTasks.handler
       Runtime: nodejs20.x
-      Role: !GetAtt LambdaBaseRole.Arn 
-      ReservedConcurrentExecutions: 50 
+      Role: !GetAtt LambdaTaskRole.Arn
+      # ReservedConcurrentExecutions: 50
       VpcConfig:
         SecurityGroupIds: [!Ref LambdaSecurityGroup]
         SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
@@ -32,8 +31,8 @@ Resources:
       CodeUri: ./app_server/
       Handler: createTask.handler
       Runtime: nodejs20.x
-      Role: !GetAtt LambdaTaskRole.Arn 
-      ReservedConcurrentExecutions: 50
+      Role: !GetAtt LambdaTaskRole.Arn
+      # ReservedConcurrentExecutions: 50
       VpcConfig:
         SecurityGroupIds: [!Ref LambdaSecurityGroup]
         SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
@@ -51,8 +50,8 @@ Resources:
       CodeUri: ./app_server/
       Handler: updateTask.handler
       Runtime: nodejs20.x
-      Role: !GetAtt LambdaTaskRole.Arn 
-      ReservedConcurrentExecutions: 50
+      Role: !GetAtt LambdaTaskRole.Arn
+      # ReservedConcurrentExecutions: 50
       VpcConfig:
         SecurityGroupIds: [!Ref LambdaSecurityGroup]
         SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
@@ -60,8 +59,8 @@ Resources:
         ApiEvent:
           Type: Api
           Properties:
-            Path: /tasks
-            Method: update
+            Path: /tasks/{id}
+            Method: put
             RestApiId: !Ref TaskManagerApi
 
   DeleteTaskFunction:
@@ -70,8 +69,8 @@ Resources:
       CodeUri: ./app_server/
       Handler: deleteTask.handler
       Runtime: nodejs20.x
-      Role: !GetAtt LambdaTaskRole.Arn 
-      ReservedConcurrentExecutions: 50
+      Role: !GetAtt LambdaTaskRole.Arn
+      # ReservedConcurrentExecutions: 50
       VpcConfig:
         SecurityGroupIds: [!Ref LambdaSecurityGroup]
         SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
@@ -79,7 +78,7 @@ Resources:
         ApiEvent:
           Type: Api
           Properties:
-            Path: /tasks
+            Path: /tasks/{id}
             Method: delete
             RestApiId: !Ref TaskManagerApi
 
@@ -91,18 +90,18 @@ Resources:
     Properties:
       TableName: TasksTable
       ProvisionedThroughput:
-        ReadCapacityUnits: 5   
+        ReadCapacityUnits: 5
         WriteCapacityUnits: 5
       AttributeDefinitions:
         - AttributeName: taskId
-          AttributeType: S 
+          AttributeType: S
         - AttributeName: userId
-          AttributeType: S 
+          AttributeType: S
       KeySchema:
         - AttributeName: taskId
           KeyType: HASH
       GlobalSecondaryIndexes:
-        - IndexName: userId-index 
+        - IndexName: userId-index
           KeySchema:
             - AttributeName: userId
               KeyType: HASH
@@ -110,8 +109,7 @@ Resources:
             ProjectionType: ALL
           ProvisionedThroughput:
             ReadCapacityUnits: 5
-            WriteCapacityUnits: 5 
-
+            WriteCapacityUnits: 5
 
   # ==========================================
   # 3. NETWORKING (Custom VPC)
@@ -129,15 +127,15 @@ Resources:
     Properties:
       VpcId: !Ref CustomVPC
       CidrBlock: 10.0.1.0/24
-      AvailabilityZone: !Select [0, !GetAZs '']
+      AvailabilityZone: !Select [0, !GetAZs ""]
 
   # Private Subnet 2
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref CustomVPC
-      CidrBlock: 10.0.2.0/24 # 
-      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: 10.0.2.0/24 #
+      AvailabilityZone: !Select [1, !GetAZs ""]
 
   # Route Table for the Private Subnets
   PrivateRouteTable:
@@ -171,7 +169,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-           DestinationPrefixListId: !GetAtt DynamoDBEndpoint.PrefixListId  
+          DestinationPrefixListId: pl-67a5400e
 
   # The VPC Gateway Endpoint
   DynamoDBEndpoint:
@@ -181,7 +179,7 @@ Resources:
       ServiceName: !Sub "com.amazonaws.${AWS::Region}.dynamodb"
       VpcEndpointType: Gateway
       RouteTableIds:
-        -  !Ref PrivateRouteTable 
+        - !Ref PrivateRouteTable
 
   # ==========================================
   # 5. IAM Roles
@@ -190,9 +188,9 @@ Resources:
   LambdaBaseRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: LambdaBaseRole 
+      RoleName: LambdaBaseRole
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal: { Service: lambda.amazonaws.com }
@@ -200,15 +198,15 @@ Resources:
       Policies:
         - PolicyName: VPCAndLoggingAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-              - Effect: Allow 
+              - Effect: Allow
                 Action:
                   - ec2:CreateNetworkInterface
                   - ec2:DescribeNetworkInterfaces
                   - ec2:DeleteNetworkInterface
                 Resource: "*"
-              - Effect: Allow 
+              - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
@@ -219,9 +217,9 @@ Resources:
   LambdaTaskRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: LambdaTaskRole 
+      RoleName: LambdaTaskRole
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal: { Service: lambda.amazonaws.com }
@@ -229,9 +227,9 @@ Resources:
       Policies:
         - PolicyName: DynamoDBTaskAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-              - Effect: Allow 
+              - Effect: Allow
                 Action:
                   - ec2:CreateNetworkInterface
                   - ec2:DescribeNetworkInterfaces
@@ -251,10 +249,10 @@ Resources:
                   - dynamodb:DeleteItem
                   - dynamodb:Scan
                   - dynamodb:Query
-                Resource: !GetAtt TasksTable.Arn 
+                Resource: !GetAtt TasksTable.Arn
 
   # ==========================================
-  # 5. API GATEWAY 
+  # 5. API GATEWAY
   # ==========================================
   TaskManagerApi:
     Type: AWS::Serverless::Api
@@ -263,10 +261,9 @@ Resources:
       Cors:
         AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
         AllowHeaders: "'Content-Type'"
-        AllowOrigin: "'d1dd1v9c4h1lsi.cloudfront.net'" 
+        AllowOrigin: "'https://d1dd1v9c4h1lsi.cloudfront.net'"
       MethodSettings:
         - ResourcePath: "/*"
           HttpMethod: "*"
           ThrottlingRateLimit: 100
-          ThrottlingBurstLimit: 50 
-
+          ThrottlingBurstLimit: 50

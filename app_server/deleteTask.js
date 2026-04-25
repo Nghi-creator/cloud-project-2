@@ -3,7 +3,7 @@ const dbService = require("./dbService");
 
 exports.handler = async (event) => {
   const taskId = event.pathParameters.id;
-  const deleted = dbService.deleteTask(taskId);
+  const deleted = await dbService.deleteTask(taskId);
 
   if (!deleted) {
     return {

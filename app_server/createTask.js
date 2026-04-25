@@ -13,7 +13,7 @@ exports.handler = async (event) => {
     createdAt: new Date().toISOString(),
   };
 
-  dbService.addTask(newTask);
+  await dbService.addTask(newTask);
 
   if (!newTask) {
     return {

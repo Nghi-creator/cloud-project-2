@@ -1,7 +1,7 @@
 const dbService = require("./dbService");
 
 exports.handler = async (event) => {
-  const tasks = dbService.getAllTasks();
+  const tasks = await dbService.getAllTasks();
 
   if (!tasks) {
     return {
