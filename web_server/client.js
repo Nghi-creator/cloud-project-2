@@ -1,4 +1,5 @@
-const API_BASE_URL = "http://localhost:3000/tasks";
+const API_BASE_URL =
+  "https://heloh3vtld.execute-api.ap-southeast-1.amazonaws.com/prod/tasks";
 let tasks = [];
 
 // DOM Elements
