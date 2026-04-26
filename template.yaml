@@ -184,7 +184,7 @@ Resources:
   # ==========================================
   # 5. IAM Roles
   # ==========================================
-  # Role 1: LambdaBaseRole (For GET requests)
+  # Role 1: LambdaBaseRole
   LambdaBaseRole:
     Type: AWS::IAM::Role
     Properties:
@@ -213,7 +213,7 @@ Resources:
                   - logs:PutLogEvents
                 Resource: "arn:aws:logs:*:*:*"
 
-  # Role 2: LambdaTaskRole (For POST/PUT/DELETE)
+  # Role 2: LambdaTaskRole
   LambdaTaskRole:
     Type: AWS::IAM::Role
     Properties:
