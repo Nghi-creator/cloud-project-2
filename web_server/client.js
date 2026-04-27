@@ -9,7 +9,7 @@ const filterPriority = document.getElementById("filter-priority");
 const filterDate = document.getElementById("filter-date");
 const clearFiltersBtn = document.getElementById("clear-filters");
 
-// --- 1. READ: Fetch all tasks ---
+// --- 1. READ ---
 async function fetchTasks() {
   try {
     const response = await fetch(API_BASE_URL);
@@ -22,7 +22,7 @@ async function fetchTasks() {
   }
 }
 
-// --- 2. CREATE: Send a new task ---
+// --- 2. CREATE ---
 if (taskForm) {
   taskForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -43,7 +43,6 @@ if (taskForm) {
       });
 
       if (response.ok) {
-        // Redirect back to the dashboard upon success!
         window.location.href = "list.html";
       }
     } catch (error) {
@@ -54,6 +53,12 @@ if (taskForm) {
 
 // --- 3. DELETE ---
 async function deleteTask(taskId) {
+  const isConfirmed = confirm("Are you sure you want to delete this task?");
+
+  if (!isConfirmed) {
+    return;
+  }
+
   try {
     await fetch(`${API_BASE_URL}/${taskId}`, { method: "DELETE" });
     fetchTasks();
@@ -116,8 +121,8 @@ function renderTasks() {
 
     titleEl.textContent = task.title;
     descEl.textContent = task.description;
-    dueEl.textContent = `📅 Due: ${task.dueDate}`;
-    priorityEl.textContent = `⚡ Priority: ${task.priority}`;
+    dueEl.textContent = ` Due: ${task.dueDate}`;
+    priorityEl.textContent = ` Priority: ${task.priority}`;
     toggleBtn.textContent = isDone ? "Undo" : "Complete";
 
     if (isDone) {
