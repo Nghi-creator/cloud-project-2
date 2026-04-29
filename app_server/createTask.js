@@ -18,14 +18,18 @@ exports.handler = async (event) => {
   if (!newTask) {
     return {
       statusCode: 400,
-      headers: { "Access-Control-Allow-Origin": "*" },
+      headers: {
+        "Access-Control-Allow-Origin": "https://d1dd1v9c4h1lsi.cloudfront.net",
+      },
       body: JSON.stringify({ error: "Invalid task data" }),
     };
   }
 
   return {
     statusCode: 201,
-    headers: { "Access-Control-Allow-Origin": "*" },
+    headers: {
+      "Access-Control-Allow-Origin": "https://d1dd1v9c4h1lsi.cloudfront.net",
+    },
     body: JSON.stringify(newTask),
   };
 };

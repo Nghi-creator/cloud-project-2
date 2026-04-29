@@ -8,14 +8,18 @@ exports.handler = async (event) => {
   if (!deleted) {
     return {
       statusCode: 404,
-      headers: { "Access-Control-Allow-Origin": "*" },
+      headers: {
+        "Access-Control-Allow-Origin": "https://d1dd1v9c4h1lsi.cloudfront.net",
+      },
       body: JSON.stringify({ error: "Task not found" }),
     };
   }
 
   return {
     statusCode: 200,
-    headers: { "Access-Control-Allow-Origin": "*" },
+    headers: {
+      "Access-Control-Allow-Origin": "https://d1dd1v9c4h1lsi.cloudfront.net",
+    },
     body: JSON.stringify({ message: "Task deleted successfully" }),
   };
 };
