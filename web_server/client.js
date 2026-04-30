@@ -8,6 +8,7 @@ const taskList = document.getElementById("task-list");
 const filterPriority = document.getElementById("filter-priority");
 const filterDate = document.getElementById("filter-date");
 const clearFiltersBtn = document.getElementById("clear-filters");
+const dueDateInput = document.getElementById("dueDate");
 
 // --- 1. READ ---
 async function fetchTasks() {
@@ -23,6 +24,11 @@ async function fetchTasks() {
 }
 
 // --- 2. CREATE ---
+if (dueDateInput) {
+  const today = new Date().toISOString().split("T")[0];
+  dueDateInput.setAttribute("min", today);
+}
+
 if (taskForm) {
   taskForm.addEventListener("submit", async (e) => {
     e.preventDefault();
